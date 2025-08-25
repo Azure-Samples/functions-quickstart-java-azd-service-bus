@@ -6,3 +6,10 @@ __queuestorage__
 local.settings.json
 test
 .venv
+
+# Java specific
+*.class
+main/
+test/
+pom.xml
+target/

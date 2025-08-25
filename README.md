@@ -1,17 +1,17 @@
 ---
-description: This end-to-end Python sample demonstrates the secure triggering of a Flex Consumption plan app from a Storage Bus instance secured in a virtual network.
+description: This end-to-end Java sample demonstrates the secure triggering of a Flex Consumption plan app from a Storage Bus instance secured in a virtual network.
 page_type: sample
 products:
 - azure-functions
 - azure
 urlFragment: service-bus-trigger-virtual-network
 languages:
-- python
+- java
 - bicep
 - azdeveloper
 ---
 
-# Azure Functions quickstart with Service Bus trigger
+# Azure Functions quickstart with Service Bus trigger (Java)
 
 A common scenario that Azure Functions can be used for is for the processing of queue based events. For example, a list of batch processing jobs is queued up with instructions for machine learning processing. The function app can do some ML inferencing before completing the message in the queue.
 
@@ -29,11 +29,15 @@ This sample demonstrates a function app running in a Flex Consumption plan that 
 
 Before you can run this sample, you must have the following:
 
-* An Azure subscription
+* An Azure subscription  
+* Java 17 or later
+* [Maven 3.6 or later](https://maven.apache.org/download.cgi)
 * Ensure both Microsoft.Web and Microsoft.App are [registered resource providers on the Azure subscription](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider)
 * [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) or [PowerShell Az Module](https://learn.microsoft.com/powershell/azure/new-azureps-module-az)
-* [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Ccsharp%2Cportal%2Cbash#install-the-azure-functions-core-tools)
+* [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Cjava%2Cportal%2Cbash#install-the-azure-functions-core-tools)
 * [Azure Dev CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd?tabs=winget-windows%2Cbrew-mac%2Cscript-linux&pivots=os-windows)
+
+> **Note:** This is a Java Azure Functions project. The Maven `pom.xml` file and Java source code are located in the `src/` directory to align with Azure Developer CLI expectations for Java functions.
 
 ## Provision the solution on Azure
 
@@ -80,7 +84,7 @@ To set up this sample, follow these steps:
 ![Function App Networking tab](./img/func-vnet.png)
 1. Open the Application Insights instance that was created by the Bicep deploy. Open the `Live metrics` tab to monitor for live events. Notice that it can't connect to the application, or shows only one 'server' online. This is expected, because the Flex Consumption app is scaled down as there's no traffic or executions happening yet.
 1. Inspect [the host.json file](./src/host.json) and notice that Service Bus' `maxConcurrentCalls` has been set to 1. This makes the per instance concurrency be 1 so your function will scale to multiple instances to handle messages put in the Service Bus queue.
-1. Inspect the [function_app.py](./src/function_app.py) and notice there is a delay of 30 seconds in the code, to simulate that each message would take 30 seconds to complete being processed.
+1. Inspect the [ServiceBusFunction.java](./src/main/java/com/example/ServiceBusFunction.java) and notice there is a delay of 30 seconds in the code, to simulate that each message would take 30 seconds to complete being processed.
 
 ## Test the solution
 
@@ -89,7 +93,7 @@ To set up this sample, follow these steps:
 You can then follow [Use Service Bus Explorer to run data operations on Service Bus](https://learn.microsoft.com/en-us/azure/service-bus-messaging/explorer) to send messages and peek messages from the queue.
 ![Service Bus explorer showing messages in the queue](./img/sb-messages.png)
 1. Use the Service Bus Explorer in the portal or app to send 1,000 messages.
-1. Open Application Insights live metrics and notice the number of instances ('servers online'). Notice your app scaling the number of instances to handle processing the messages. Given there is a purposeful [30 second delay in the app code](./src/function_app.py#L12) you should see the messages being processed in 30 seconds intervals once the app's maximum instance count (default of 100) is reached. The sample telemetry should also show that your messages are triggering the function, and making their way from Service Bus through the VNet into the function app for processing.
+1. Open Application Insights live metrics and notice the number of instances ('servers online'). Notice your app scaling the number of instances to handle processing the messages. Given there is a purposeful [30 second delay in the app code](./src/main/java/com/example/ServiceBusFunction.java#L25) you should see the messages being processed in 30 seconds intervals once the app's maximum instance count (default of 100) is reached. The sample telemetry should also show that your messages are triggering the function, and making their way from Service Bus through the VNet into the function app for processing.
 ![Live metrics available](./img/live-metrics.png)
 
 ## Clean up resources
