@@ -566,6 +566,7 @@ FodyWeavers.xsd
 infra/**/*.json
 !infra/main.json
 !infra/main.parameters.json
+!infra/abbreviations.json
 
 # Java specific
 *.class
