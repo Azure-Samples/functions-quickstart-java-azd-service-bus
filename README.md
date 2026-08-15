@@ -1,5 +1,5 @@
 ---
-description: This end-to-end Java sample demonstrates the secure triggering of a Flex Consumption plan app from a Storage Bus instance secured in a virtual network.
+description: This end-to-end Java sample demonstrates the secure triggering of a Flex Consumption plan app from a Service Bus instance secured in a virtual network.
 page_type: sample
 products:
 - azure-functions
