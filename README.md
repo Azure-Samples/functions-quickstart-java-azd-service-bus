@@ -101,7 +101,6 @@ Use the intended subscription when `azd` prompts you during provisioning. The ge
   The deployer's data-role assignments default to principal type `User`; the function's managed identity uses `ServicePrincipal`. For service-principal deployments, run `azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal` before provisioning.
 
   After provisioning completes, the post-provision hook creates `src/local.settings.json` only if it doesn't exist. An existing file is preserved byte-for-byte, not validated, and the hook prints the namespace and queue values to review manually. It does not print existing settings or secrets. A newly created file contains:
- z
 
   ```json
   {
