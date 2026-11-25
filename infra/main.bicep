@@ -79,7 +79,7 @@ module processor './app/processor.bicep' = {
     identityClientId: processorUserAssignedIdentity.outputs.clientId
     appSettings: {
     }
-    virtualNetworkSubnetId: vnetEnabled ? '${serviceVirtualNetwork.outputs.resourceId}/subnets/app' : ''
+    virtualNetworkSubnetId: vnetEnabled ? '${serviceVirtualNetwork.?outputs.resourceId}/subnets/app' : ''
     serviceBusQueueName: !empty(serviceBusQueueName) ? serviceBusQueueName : '${abbrs.serviceBusNamespacesQueues}${resourceToken}'
     serviceBusNamespaceFQDN: '${serviceBus.outputs.name}.servicebus.windows.net'
     deploymentStorageContainerName: deploymentStorageContainerName
@@ -264,7 +264,7 @@ module servicePrivateEndpoint 'app/servicebus-privateEndpoint.bicep' = if (vnetE
   params: {
     location: location
     tags: tags
-    virtualNetworkName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    virtualNetworkName: serviceVirtualNetwork!.outputs.name
     subnetName: 'sb'
     sbNamespaceId: serviceBus.outputs.resourceId
   }
@@ -276,7 +276,7 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
   params: {
     location: location
     tags: tags
-    virtualNetworkName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    virtualNetworkName: serviceVirtualNetwork!.outputs.name
     subnetName: 'st'
     resourceName: storage.outputs.name
   }
@@ -312,3 +312,5 @@ output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_RESOURCE_GROUP string = rg.name
 output SERVICE_PROCESSOR_NAME string = processor.outputs.SERVICE_PROCESSOR_NAME
 output AZURE_FUNCTION_NAME string = processor.outputs.SERVICE_PROCESSOR_NAME
+output SERVICE_BUS_CONNECTION__fullyQualifiedNamespace string = '${serviceBus.outputs.name}.servicebus.windows.net'
+output SERVICE_BUS_QUEUE_NAME string = !empty(serviceBusQueueName) ? serviceBusQueueName : '${abbrs.serviceBusNamespacesQueues}${resourceToken}'

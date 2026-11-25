@@ -35,4 +35,23 @@ public class ServiceBusFunctionTest {
             function.serviceBusQueueTrigger(message, context);
         });
     }
+
+    @Test
+    public void testInterruptedProcessingFailsWithoutLoggingCompletion() {
+        final ExecutionContext context = mock(ExecutionContext.class);
+        final Logger logger = mock(Logger.class);
+        doReturn(logger).when(context).getLogger();
+
+        Thread.currentThread().interrupt();
+        try {
+            final IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> new ServiceBusFunction().serviceBusQueueTrigger("interrupted message", context));
+
+            assertInstanceOf(InterruptedException.class, error.getCause());
+            assertTrue(Thread.currentThread().isInterrupted());
+            verify(logger, never()).info("Java ServiceBus Queue trigger end processing a message");
+        } finally {
+            Thread.interrupted();
+        }
+    }
 }

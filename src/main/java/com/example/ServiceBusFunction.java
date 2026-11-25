@@ -31,6 +31,7 @@ public class ServiceBusFunction {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.warning("Processing was interrupted: " + e.getMessage());
+            throw new IllegalStateException("Service Bus message processing was interrupted.", e);
         }
         
         logger.info("Java ServiceBus Queue trigger end processing a message");
