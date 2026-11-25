@@ -4,7 +4,7 @@ page_type: sample
 products:
 - azure-functions
 - azure
-urlFragment: service-bus-trigger-virtual-network
+urlFragment: service-bus-trigger-virtual-network-java
 languages:
 - java
 - bicep
@@ -17,8 +17,8 @@ A common scenario that Azure Functions can be used for is for the processing of 
 
 This sample demonstrates a function app running in a Flex Consumption plan that connects to Service Bus running in a virtual network. This sample demonstrates these two key features of the Flex Consumption plan:
 
-* **High scale**. A low concurency of 1 is configured for the function app in the `host.json` file. Once messages are loaded into Service Bus and the app is started, you can see how it scales to one app instance per message simultaneously.
-* **Virtual network integration**. The Service Bus that this Flex Consumption app reads events from is secured behind a private endpoint. The function app can read events from it because it is configured with VNet integration. All connections to Service Bus and to the storage account associated with the Flex Consumption app also use managed identity connections instead of connection strings.
+* **High scale**. `maxConcurrentCalls` is set to 1 in `host.json`, with a 30-second processing delay. The app can scale out as messages accumulate, up to the configured maximum of 100 instances; an instance is not guaranteed for every message.
+* **Virtual network integration**. With `VNET_ENABLED=true`, Service Bus and storage public access is disabled and the function app uses VNet integration and private endpoints. The quickstart uses `false` so you can run locally. In either mode, the deployed app uses managed identity instead of connection strings for Service Bus and storage.
 
 ![Diagram showing Service Bus with a private endpoint and an Azure Functions Flex Consumption app triggering from it via VNet integration](./img/SB-VNET.png)
 
@@ -33,9 +33,11 @@ Before you can run this sample, you must have the following:
 * Java 17 or later
 * [Maven 3.6 or later](https://maven.apache.org/download.cgi)
 * Ensure both Microsoft.Web and Microsoft.App are [registered resource providers on the Azure subscription](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider)
-* [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) or [PowerShell Az Module](https://learn.microsoft.com/powershell/azure/new-azureps-module-az)
+* [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 * [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Cjava%2Cportal%2Cbash#install-the-azure-functions-core-tools)
 * [Azure Dev CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd?tabs=winget-windows%2Cbrew-mac%2Cscript-linux&pivots=os-windows)
+* Bash on Linux/macOS, or PowerShell 7 on Windows, for the post-provision hook
+* Permission to create resources and role assignments in the target subscription
 
 > **Note:** This is a Java Azure Functions project. The Maven `pom.xml` file and Java source code are located in the `src/` directory to align with Azure Developer CLI expectations for Java functions.
 
@@ -67,10 +69,9 @@ Sign in with both the Azure Developer CLI and Azure CLI. The generated message s
 ```shell
 azd auth login
 az login
-az account set --subscription "<subscription-id>"
 ```
 
-Use the same subscription when `azd` prompts you during provisioning.
+Use the intended subscription when `azd` prompts you during provisioning. The generated sender explicitly targets that subscription without changing the Azure CLI default.
 
 ## Provision Azure resources
 
@@ -90,13 +91,16 @@ Use the same subscription when `azd` prompts you during provisioning.
   | _VNET_ENABLED_ | Whether to deploy with VNet integration and private endpoints. Enter `false` for this quickstart. |
 
   This creates all necessary Azure resources including:
-  * Azure Service Bus namespace and queue
-  * Azure Function App (Flex Consumption)
-  * Application Insights for monitoring
-  * Storage account for function app
-  * Virtual network with private endpoints (if `VNET_ENABLED=true`)
 
-  After provisioning completes, a post-provision script automatically generates `src/local.settings.json` with the correct Service Bus connection settings:
+* Azure Service Bus namespace and queue
+* Azure Function App (Flex Consumption)
+* Application Insights for monitoring
+* Storage account for function app
+* Virtual network with private endpoints (if `VNET_ENABLED=true`)
+
+  The function's managed identity uses principal type `ServicePrincipal`. azd sets the deployer's principal type automatically from the signed-in identity (`User` or `ServicePrincipal`).
+
+  After provisioning completes, the post-provision hook creates `src/local.settings.json` only if it doesn't exist. An existing file is preserved byte-for-byte, not validated, and the hook prints the namespace and queue values to review manually. It does not print existing settings or secrets. A newly created file contains:
 
   ```json
   {
@@ -110,6 +114,8 @@ Use the same subscription when `azd` prompts you during provisioning.
   }
   ```
 
+  Local execution uses your developer credentials from `az login`, not the deployed app's managed identity. If reusing existing settings, review any `ServiceBusConnection` connection string or `ServiceBusConnection__credential` and `ServiceBusConnection__clientId` values that could override developer authentication.
+
 ## Prepare local dependencies
 
 1. Navigate to the `src` folder and restore/build the Java project:
@@ -120,6 +126,8 @@ Use the same subscription when `azd` prompts you during provisioning.
   ```
 
 ## Run your app locally
+
+Use `VNET_ENABLED=false` for local execution unless your machine has connectivity and DNS resolution to the private endpoints. Don't run the local host while verifying the deployed app: both hosts consume from the same queue.
 
 1. Start the Azurite storage emulator. You can do this using the [Azurite extension](https://marketplace.visualstudio.com/items?itemName=Azurite.azurite) in VS Code or by running `azurite` in a separate terminal.
 
@@ -133,14 +141,14 @@ Use the same subscription when `azd` prompts you during provisioning.
 
   ```output
   Functions:
-    ServiceBusQueueTrigger - [serviceBusTrigger]
+    serviceBusQueueTrigger - [serviceBusTrigger]
   ```
 
 1. When you're done, press Ctrl+C in the terminal window to stop the host process.
 
 ## Run your app using Visual Studio Code
 
-1. Open the project root folder in Visual Studio Code.
+1. Open the `src` folder in Visual Studio Code so its Java launch configuration and Maven tasks are used.
 1. Start the Azurite storage emulator.
 1. Press **Run/Debug (F5)** to run in the debugger.
 1. The Azure Functions extension starts the local runtime.
@@ -157,9 +165,11 @@ Run this command to deploy your function app code to Azure:
 azd deploy
 ```
 
+Run `azd` commands from the repository root, not `src`. To provision and deploy together, use `azd up`.
+
 ## Test the solution
 
-1. With the function running (either locally or deployed to Azure), send a test message to the Service Bus queue by running the generated script:
+1. From the repository root, with the function running (either locally or deployed to Azure), send a test message to the Service Bus queue by running the generated script:
 
   ```shell
   ./send-message.sh
@@ -171,14 +181,16 @@ azd deploy
   .\send-message.ps1
   ```
 
-1. You should see output in the function terminal similar to:
+1. For local execution, you should see output in the function terminal similar to:
 
   ```output
   [2026-01-01T10:30:15.123Z] Java ServiceBus Queue trigger start processing a message: Hello from the CLI
   [2026-01-01T10:30:45.123Z] Java ServiceBus Queue trigger end processing a message
   ```
 
-1. To observe scaling behavior in Azure, deploy first, then send multiple messages and check Application Insights live metrics.
+1. For Azure execution, stop the local host and check Application Insights for a successful `serviceBusQueueTrigger` invocation and the start/end processing logs. Verify that the queue drains with no dead-letter messages. To observe scaling, send multiple messages and check live metrics.
+
+With `VNET_ENABLED=true`, sending from a public machine (including Service Bus Explorer) is blocked. Send from a client inside the VNet, or one with private connectivity and DNS. Adding a firewall IP alone does not permit access while public network access is disabled. If you temporarily enable restricted public access for a test sender, restore the original network settings immediately afterward; that is a public send followed by private function processing, not an entirely private end-to-end test.
 
 ## Redeploy your code
 

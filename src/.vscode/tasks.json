@@ -6,6 +6,12 @@
 			"label": "func: host start",
 			"command": "host start",
 			"problemMatcher": "$func-java-watch",
+			"options": {
+				"cwd": "${workspaceFolder}/target/azure-functions/functions-quickstart-java-azd-service-bus",
+				"env": {
+					"JAVA_OPTS": "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+				}
+			},
 			"isBackground": true,
 			"dependsOn": "package (functions)"
 		},

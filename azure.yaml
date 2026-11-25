@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: functions-e2e-sb-vnet
+name: functions-e2e-sb-vnet-java
 metadata:
-    template: functions-e2e-sb-vnet@0.0.1
+    template: functions-e2e-sb-vnet-java@0.0.1
 infra:
   provider: bicep
   path: infra
